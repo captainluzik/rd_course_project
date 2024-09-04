@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>CVE Details for {{ cve.id }}</h1>
+
+<p><strong>Description:</strong> {{ cve.description }}</p>
+<p><strong>Published Date:</strong> {{ cve.date_published.strftime('%Y-%m-%d') }}</p>
+<p><strong>State:</strong> {{ cve.state }}</p>
+
+<h3 class="mt-4">References:</h3>
+<ul>
+    {% for ref in cve.references %}
+    <li><a href="{{ ref.url }}" target="_blank">{{ ref.url }}</a></li>
+    {% endfor %}
+</ul>
+
+<h3 class="mt-4">Affected Products:</h3>
+<ul>
+    {% for product in cve.affected_products %}
+    <li>{{ product.vendor }} - {{ product.product }} ({{ product.default_status }})</li>
+    {% endfor %}
+</ul>
+
+<a href="/" class="btn btn-secondary mt-4">Back to Search</a>
+{% endblock %}
