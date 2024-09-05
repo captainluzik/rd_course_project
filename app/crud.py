@@ -19,7 +19,7 @@ class CVECRUD:
         if exist_record:
             return exist_record
         cve_record = CVERecord.from_dict(cve_data)
-        await self.session.commit()
+        self.session.add(cve_record)
         return cve_record
 
     async def update_cve_record(self, cve_id: str, update_data: dict) -> Optional[CVERecord]:

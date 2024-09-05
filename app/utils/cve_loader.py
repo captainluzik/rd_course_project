@@ -3,7 +3,7 @@ import git
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict
-
+import aiofiles
 from app.crud import CVECRUD
 from app.models import CVERecord
 from tqdm import tqdm
@@ -26,27 +26,44 @@ class CVELoader:
             repo.remotes.origin.pull()
             print("Repository updated")
 
-    def _load_json_files(self) -> List[dict]:
-        cve_data = []
+    async def _load_json_files(self) -> None:
+        batch_size = 1000
+        batch = []
+
         print("Loading JSON files...")
-        for root, _, files in os.walk(os.path.join(self.local_repo_path, "cves")):
-            for file in files:
-                if file.endswith(".json") and file != "delta.json" and file != "deltaLog.json":
-                    with open(os.path.join(root, file), 'r') as f:
-                        try:
-                            data = json.load(f)
-                            cve_data.append(data)
-                        except json.JSONDecodeError as e:
-                            print(f"Error decoding JSON from file {file}: {e}")
-        print(f"Loaded {len(cve_data)} JSON files")
-        return cve_data
+        cves_path = os.path.join(self.local_repo_path, "cves")
+        years = sorted(os.listdir(cves_path))
+
+        for year in years:
+            year_path = os.path.join(cves_path, year)
+            if os.path.isdir(year_path):
+                for root, _, files in os.walk(year_path):
+                    print(f"Processing files in {root}")
+                    for file in files:
+                        if file.endswith(".json") and file != "delta.json" and file != "deltaLog.json":
+                            file_path = os.path.join(root, file)
+                            async with aiofiles.open(file_path, 'r') as f:
+                                try:
+                                    data = json.loads(await f.read())
+                                    batch.append(data)
+                                    if len(batch) == batch_size:
+                                        await self._bulk_process_cve_data(batch)
+                                        batch = []
+                                except json.JSONDecodeError as e:
+                                    print(f"Error decoding JSON from file {file}: {e}")
+
+        if batch:
+            await self._bulk_process_cve_data(batch)
+
+        print(f"Loaded and processed JSON files in batches of {batch_size}")
+
+    async def _bulk_process_cve_data(self, cve_data: List[Dict]):
+        for data in tqdm(cve_data, desc="Processing data"):
+            await self._process_cve_data(data)
 
     async def load_initial_data(self):
         self.clone_or_update_repo()
-        cve_data = self._load_json_files()
-        print("Processing data...")
-        for data in tqdm(cve_data):
-            await self._process_cve_data(data)
+        await self._load_json_files()
 
     async def update_data(self):
         self.clone_or_update_repo()
