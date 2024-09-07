@@ -4,9 +4,12 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict
 import aiofiles
+
 from app.crud import CVECRUD
 from app.models import CVERecord
 from tqdm import tqdm
+import aiohttp
+from app.config import INTERNAL_HOST
 
 
 class CVELoader:
@@ -47,19 +50,27 @@ class CVELoader:
                                     data = json.loads(await f.read())
                                     batch.append(data)
                                     if len(batch) == batch_size:
-                                        await self._bulk_process_cve_data(batch)
+                                        await self._bulk_process_cve_data_with_api(batch)
                                         batch = []
                                 except json.JSONDecodeError as e:
                                     print(f"Error decoding JSON from file {file}: {e}")
 
         if batch:
-            await self._bulk_process_cve_data(batch)
-
+            # await self._bulk_process_cve_data(batch)
+            await self._bulk_process_cve_data_with_api(batch)
         print(f"Loaded and processed JSON files in batches of {batch_size}")
 
     async def _bulk_process_cve_data(self, cve_data: List[Dict]):
         for data in tqdm(cve_data, desc="Processing data"):
             await self._process_cve_data(data)
+
+    @staticmethod
+    async def _bulk_process_cve_data_with_api(cve_data: List[Dict]):
+        async with aiohttp.ClientSession() as session:
+            try:
+                await session.post(f"{INTERNAL_HOST}/api/v1/cve/bulk_create", json=cve_data)
+            except aiohttp.ClientError as e:
+                print(f"Error processing data with API: {e}")
 
     async def load_initial_data(self):
         self.clone_or_update_repo()
@@ -84,7 +95,7 @@ class CVELoader:
 
         if is_new:
             async with self.session.begin():
-                await self.crud.create_cve_record(data.get("cveMetadata"))
+                await self.crud.create_cve_record_with_api(data)
         else:
             async with self.session.begin():
                 await self.crud.update_cve_record(cve_id, data.get("cveMetadata"))
@@ -92,13 +103,16 @@ class CVELoader:
     async def _process_delta_file(self, delta_path: str) -> None:
         delta_data = await self._load_json(delta_path)
         actions = ["new", "updated"]
+        cve_data = []
         for action in actions:
             for record in delta_data.get(action, []):
                 cve_id = record.get("cveId")
                 splitted_url = record.get("githubLink").split("/")
                 year_dir = f"{splitted_url[-3]}/{splitted_url[-2]}"
                 file_path = os.path.join(self.local_repo_path, "cves", year_dir, f"{cve_id}.json")
-                await self._process_cve_record(file_path, is_new=True if action == "new" else False)
+                file_path = await self._load_json(file_path)
+                cve_data.append(file_path)
+        await self._bulk_process_cve_data_with_api(cve_data)
 
     async def _process_cve_data(self, data: Dict):
         async with self.session.begin():

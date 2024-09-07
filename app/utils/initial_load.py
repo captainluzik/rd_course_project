@@ -1,15 +1,12 @@
-import os
 from cve_loader import CVELoader
-from app.database import async_session, engine
+from app.database import async_session
 from sqlalchemy import text
 import asyncio
-
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-REPO_PATH = os.path.join(DIR_PATH, "cverepo")
+from app.config import REPO_PATH
 
 
 async def check_database():
-    async with async_session(engine()) as session:
+    async with async_session() as session:
         async with session.begin():
             result = await session.execute(text("SELECT * FROM cve_records LIMIT 1"))
             if result.fetchone():
@@ -18,7 +15,7 @@ async def check_database():
 
 
 async def initial_load():
-    async with async_session(engine()) as session:
+    async with async_session() as session:
         loader = CVELoader(
             repo_url="https://github.com/CVEProject/cvelistV5",
             session=session,

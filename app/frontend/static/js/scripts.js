@@ -1,8 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const resultsTable = document.getElementById("resultsTable");
     const form = document.querySelector("form");
-    const cveForm = document.getElementById("cveForm");
-    const deleteButton = document.getElementById("deleteButton");
     const openCreateModalButton = document.getElementById("openCreateModal");
     const createCveModal = new bootstrap.Modal(document.getElementById("createCveModal"));
     const createCveForm = document.getElementById("createCveForm");
@@ -196,32 +194,30 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
+});
 
-    if (cveForm) {
-        cveForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const formData = new FormData(cveForm);
-            const cveData = Object.fromEntries(formData.entries());
-            const cveId = cveData.id;
+async function saveCVE() {
+        const cveForm = document.getElementById("cveDetails");
+        const formData = new FormData(cveForm);
+        const cveData = Object.fromEntries(formData.entries());
+        const cveId = cveData.id;
 
-            try {
-                const response = await fetch(`/api/v1/cve/${cveId}`, {
-                    method: 'PATCH', headers: {
-                        'Content-Type': 'application/json',
-                    }, body: JSON.stringify(cveData),
-                });
-                if (!response.ok) {
-                    throw new Error("Error updating CVE");
-                }
-                alert("CVE updated successfully");
-            } catch (error) {
-                console.error("Error updating CVE:", error);
+        try {
+            const response = await fetch(`/api/v1/cve/${cveId}`, {
+                method: 'PATCH', headers: {
+                    'Content-Type': 'application/json',
+                }, body: JSON.stringify(cveData),
+            });
+            if (!response.ok) {
+                throw new Error("Error updating CVE");
             }
-        });
+            alert("CVE updated successfully");
+        } catch (error) {
+            console.error("Error updating CVE:", error);
+        }
     }
 
-    if (deleteButton) {
-        deleteButton.addEventListener("click", async () => {
+    async function deleteCVEFromForm() {
             const cveId = document.getElementById("cveId").value;
             if (confirm("Are you sure you want to delete this CVE?")) {
                 try {
@@ -237,7 +233,5 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.error("Error deleting CVE:", error);
                 }
             }
-        });
-    }
-});
+        }
 

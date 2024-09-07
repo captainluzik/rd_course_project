@@ -1,13 +1,11 @@
 import os
 from .cve_loader import CVELoader
-from app.database import async_session, engine
-
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-REPO_PATH = os.path.join(DIR_PATH, "cverepo")
+from app.database import async_session
+from app.config import REPO_PATH
 
 
 async def update_load():
-    async with async_session(engine()) as session:
+    async with async_session() as session:
         loader = CVELoader(
             repo_url="https://github.com/CVEProject/cvelistV5",
             session=session,

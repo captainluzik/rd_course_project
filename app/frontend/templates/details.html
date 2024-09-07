@@ -3,7 +3,7 @@
 
 {% block content %}
     <h1 class="mb-4">CVE Details</h1>
-    <form id="cveForm">
+    <form id="cveDetails">
         <div class="mb-3">
             <label for="cveId" class="form-label">CVE ID</label>
             <input type="text" class="form-control" id="cveId" name="id" readonly value="{{ cve_record.id }}">
@@ -27,8 +27,9 @@
             <input type="date" class="form-control" id="datePublished" name="date_published"
                    value="{{ cve_record.date_published.strftime('%Y-%m-%d') }}">
         </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-        <button type="button" class="btn btn-danger" id="deleteButton">Delete</button>
+        <button type="button" class="btn btn-primary" onclick="saveCVE();">Save</button>
+        <button type="button" class="btn btn-danger" id="deleteButton" onclick="deleteCVEFromForm();">Delete
+        </button>
     </form>
     {% block scripts %}
         <script src="{{ url_for('static', path='js/scripts.js') }}"></script>

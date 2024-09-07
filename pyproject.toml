@@ -19,6 +19,7 @@ fastapi-pagination = "^0.12.26"
 fastapi = {version = "^0.112.2", extras = ["all"]}
 apscheduler = "^3.10.4"
 aiofiles = "^24.1.0"
+aiohttp = "^3.10.5"
 
 
 [build-system]

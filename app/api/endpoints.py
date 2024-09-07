@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import CVECRUD
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from sqlalchemy.orm import joinedload
 from fastapi.exceptions import HTTPException
 
@@ -21,6 +21,11 @@ router = APIRouter(
 )
 
 SessionDepends = Depends(get_session)
+
+
+@router.get('/ping')
+async def ping():
+    return Response(status_code=status.HTTP_200_OK, content="pong")
 
 
 @router.get('/list', response_model=Page[CVERecordSchema])
@@ -78,7 +83,7 @@ async def get_cve_record(cve_id: str, session: AsyncSession = SessionDepends) ->
 
 
 @router.post('/create', response_model=CreateCVERecordSchema)
-async def create_cve(cve_data: dict, session: AsyncSession = SessionDepends) -> CVERecordSchema:
+async def create_cve(cve_data: Dict, session: AsyncSession = SessionDepends) -> CVERecordSchema:
     """
     Create a new CVE record.
 
@@ -94,7 +99,7 @@ async def create_cve(cve_data: dict, session: AsyncSession = SessionDepends) -> 
 
 
 @router.patch("/{cve_id}", response_model=CreateCVERecordSchema)
-async def update_cve_record(cve_id: str, update_data: dict, session: AsyncSession = SessionDepends) -> CVERecordSchema:
+async def update_cve_record(cve_id: str, update_data: Dict, session: AsyncSession = SessionDepends) -> CVERecordSchema:
     """
     Update an existing CVE record by its ID.
 
@@ -120,3 +125,14 @@ async def delete_cve_record(cve_id: str, session: AsyncSession = SessionDepends)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.post("/bulk_create")
+async def bulk_create_cve_records(cve_data: List[Dict], session: AsyncSession = SessionDepends) -> JSONResponse:
+    """
+    Bulk create CVE records.
+
+    - **cve_data**: A list of CVE records to create.
+    """
+    cve_records = await CVECRUD(session).bulk_create_all(cve_data)
+    return JSONResponse(content={"detail": f"{len(cve_records)} records created."})

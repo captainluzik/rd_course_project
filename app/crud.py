@@ -91,3 +91,31 @@ class CVECRUD:
         await self.session.delete(reference)
         await self.session.commit()
         return True
+
+    async def _bulk_create_cve_records(self, cve_data: List[dict]) -> List[CVERecord]:
+        cve_records = [CVERecord.from_dict(data.get("cveMetadata")) for data in cve_data]
+        self.session.add_all(cve_records)
+        return cve_records
+
+    async def _bulk_create_problem_types(self, problem_type_data: List[dict], cve_record: CVERecord) -> List[ProblemType]:
+        problem_types = []
+        for pt_data in problem_type_data:
+            for description in pt_data.get("descriptions", []):
+                problem_type = ProblemType.from_dict(description, cve_record)
+                problem_types.append(problem_type)
+        self.session.add_all(problem_types)
+        return problem_types
+
+    async def _bulk_create_references(self, reference_data: List[dict], cve_record: CVERecord) -> List[Reference]:
+        references = [Reference.from_dict(data, cve_record) for data in reference_data]
+        self.session.add_all(references)
+        return references
+
+    async def bulk_create_all(self, cve_data: List[dict]) -> List[CVERecord]:
+        cve_records = await self._bulk_create_cve_records(cve_data)
+        for cve_data, cve_record in zip(cve_data, cve_records):
+            await self._bulk_create_problem_types(cve_data.get("containers", {}).get("cna", {}).get("problemTypes", []),
+                                                  cve_record)
+            await self._bulk_create_references(cve_data.get("containers", {}).get("cna", {}).get("references", []),
+                                               cve_record)
+        return cve_records
