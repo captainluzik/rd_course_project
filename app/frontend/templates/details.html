@@ -25,7 +25,7 @@
         <div class="mb-3">
             <label for="datePublished" class="form-label">Date Published</label>
             <input type="date" class="form-control" id="datePublished" name="date_published"
-                   value="{{ cve_record.date_published.strftime('%Y-%m-%d') }}">
+                   value="{% if cve_record.date_published %}{{ cve_record.date_published.strftime('%Y-%m-%d') }}{% endif %}">
         </div>
         <button type="button" class="btn btn-primary" onclick="saveCVE();">Save</button>
         <button type="button" class="btn btn-danger" id="deleteButton" onclick="deleteCVEFromForm();">Delete
