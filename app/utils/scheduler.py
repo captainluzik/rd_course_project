@@ -21,7 +21,7 @@ async def run_update_load():
     await loop.run_in_executor(executor, sync_update_load)
 
 
-@scheduler.scheduled_job('interval', seconds=60)
+@scheduler.scheduled_job('interval', seconds=3600)
 async def job():
     await run_update_load()
     print("Job executed")
